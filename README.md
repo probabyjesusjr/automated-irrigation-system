@@ -1,54 +1,44 @@
-# Pico Plant Waterer 🌱
+# Automated Irrigation System 🌱
 
-An automated plant-watering system built on a Raspberry Pi Pico W. It reads soil moisture with a capacitive sensor and, when the soil is dry, switches on a small submersible pump through a relay to water the plant — then checks again on a timer. This was my first electronics + embedded programming project.
+An automated plant-watering system built on Raspberry Pi, growing from a single-plant prototype toward a multi-plant, sensor-driven, camera-equipped garden monitor. This is my first robotics and electronics project — built and documented version by version.
 
-## What it does
-- Reads soil moisture once an hour
-- If the soil is dry (past a calibrated threshold), runs the pump for a short pulse
-- Otherwise does nothing and waits for the next check
-- Runs standalone off a USB power supply — no computer needed once it's loaded
+![Build photo](v1-single-plant/photos/IMG_4742%20Small.jpeg)
 
-## Hardware
+## Versions
+
+The project is built in stages, each one adding capability:
+
+| Version | What it adds | Status |
+|---|---|---|
+| **[v1 — Single Plant](v1-single-plant/)** | One plant: Pico W reads a soil moisture sensor and runs a pump through a relay | ✅ Current / working |
+| **v2 — Four Plants** | Four plants using an ADS1115 ADC to read multiple sensors | 🔭 Planned |
+| **v3 — Web Dashboard** | A web dashboard to view readings and control watering remotely | 🔭 Planned |
+| **v4 — Camera + ML** | A camera plus machine learning to monitor plant health | 🔭 Planned |
+
+Each version lives in its own folder so the progression stays clear. Start with **[v1-single-plant](v1-single-plant/)** for the full hardware, wiring, and code details.
+
+## Hardware (v1)
+
 - Raspberry Pi Pico W (RP2040)
 - Capacitive soil moisture sensor (HW-390 / v2.0)
-- SONGLE SRD-05VDC-SL-C single-channel relay module (active-low)
+- SONGLE single-channel relay module (active-low)
 - 5V mini submersible pump
-- Breadboard + jumper wires
-- 5V / 3A USB power supply
+- Breadboard, jumper wires, and a 5V / 3A USB power supply
 
-## Wiring
-| Connection | Pico pin |
-|---|---|
-| Sensor VCC | 3V3 |
-| Sensor GND | GND |
-| Sensor signal (AOUT) | GP26 (ADC) |
-| Relay VCC | 3V3 |
-| Relay GND | GND |
-| Relay IN | GP22 |
+A Raspberry Pi 5 will join the project in later versions as the "brain" for logging, the dashboard, and machine learning.
 
-Pump power runs through the relay's switch contacts: **COM** to the Pico's 5V (VBUS), **NO** to the pump's positive lead, and the pump's negative lead to GND.
+## Repository structure
 
-## The code
-- `main.py` — the watering program (runs automatically on boot)
-- `calibrate.py` — prints raw sensor readings so you can find your own dry/wet numbers
-- `blink.py` — the very first "is this thing alive" LED blink test
+```
+automated-irrigation-system/
+├── v1-single-plant/      # Current build: one plant
+│   ├── pico/             # MicroPython code for the Pico W
+│   ├── photos/           # Build photos
+│   └── README.md         # Full v1 details
+├── docs/                 # Tutorials and write-ups
+└── README.md             # You are here
+```
 
-### Calibration
-Using `calibrate.py` I measured:
-- **Dry** (sensor in air): ~54,500
-- **Wet** (sensor in water): ~20,000
-- **Threshold**: ~37,000 (the midpoint)
+## Learning journey
 
-A capacitive sensor reads *higher* as the soil gets *drier*, so the pump triggers when the reading climbs above 37,000.
-
-## What I learned (the hard part)
-It worked on paper but fought me in two memorable ways:
-
-**1. The pump would turn on and never stop.** The relay is a 5V active-low board, but the Pico's GPIO only outputs 3.3V. That was enough to switch the relay *on* but not enough to switch it back *off* against the 5V coil — so the relay latched and the pump ran forever. The fix was a logic-level match: I moved the relay's VCC from the 5V rail to the Pico's 3V3 pin so the control signal and the coil share a reference. After that the relay turned on and off exactly on command — and as a bonus, it now defaults to OFF on any reset, so a glitch can't leave the pump running.
-
-**2. The pump browning out the Pico.** The moment the relay closed, the pump's startup current surge collapsed the shared 5V rail and reset the microcontroller before the motor could even spin. I caught it live in the serial output: the reading printed, `DRY - watering` printed, the relay clicked — then the board disconnected. The fix is a large capacitor across the 5V rail to absorb that inrush. *(In progress.)*
-
-## Status
-- ✅ Sensor reading, watering logic, and relay control all working
-- 🔧 Inrush-brownout capacitor — to be added
-- 🔭 Future: log readings to a Raspberry Pi over USB serial, then build a small web dashboard
+I started this project in **May 2026** knowing essentially nothing about electronics — not what a relay was, not how a sensor talks to a microcontroller, nothing. Each version is a checkpoint in learning by building: getting a single plant watered reliably first, then adding plants, then data, then intelligence. The bugs I hit along the way (and how I fixed them) are written up in each version's README, because the debugging is where most of the learning happened.
